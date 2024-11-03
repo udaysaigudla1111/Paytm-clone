@@ -78,7 +78,8 @@ userRouter.post("/signup",async (req,res)=>{
 userRouter.post("/signin",async (req,res)=>{
     
     const {username,password} = req.body;
-
+    console.log(username);
+    
      const requiredBody = z.object({
         username:z.string().min(5).max(30).email(),
         password:z.string().min(3).max(20)
@@ -191,21 +192,25 @@ interface IUserData{
     lastName:string
 }
 
-userRouter.get("/bulk",async (req,res)=>{
+userRouter.get("/bulk",authMiddleware,async (req,res)=>{
+    const userId = (req as CustomInterface).userId;
     const filter = req.query.filter||"";
 
     try {
         
-    const users = await User.find({
+    let users = await User.find({
         $or:[{
-            firstName:{"$regex":filter}
+            firstName:{"$regex":filter,"$options":"i"}
         },
         {
-            lastName:{"$regex":filter}
+            lastName:{"$regex":filter,"$options":"i"}
         }]
     })
-
+    users = users.filter((user)=>{
+            return user._id.toString()!==userId
+    })
     const UserData:IUserData[] = users.map((user)=>{
+
         return {
             username:user.username,
             _id:user._id,
@@ -226,5 +231,29 @@ userRouter.get("/bulk",async (req,res)=>{
     }
 
 })
+
+userRouter.get("/me",authMiddleware,async (req,res)=>{
+
+    const userId = (req as CustomInterface).userId;
+
+    try {
+        
+        const user = await User.findOne({_id:userId});
+
+        res.status(ResponseStatus.Success).json({
+            firstName:user?.firstName
+        })
+        return
+
+    } catch (error) {
+        console.log(error);
+        res.status(ResponseStatus.SERVERERROR).json({
+            message:"INTERNAL SERVER ERROR"
+        })
+        
+    }
+
+})
+
 
 export {userRouter}

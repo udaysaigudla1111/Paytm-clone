@@ -11,7 +11,7 @@ export interface CustomInterface extends Request{
 
 
 const authMiddleware = async (req:Request,res:Response,next:NextFunction)=>{
-
+     
     try {   
         const token:string = req.headers.token as string;
     if(!token)
